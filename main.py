@@ -44,22 +44,33 @@ def main():
     # ['area', 'bedrooms', 'bathrooms', 'stories', 'mainroad', 'guestroom', 
     #  'basement', 'hotwaterheating', 'airconditioning', 'parking', 'prefarea', 'furnishingstatus']
     print("\n--- 4. Predicting a New Custom House ---")
-    new_house_features = {
-        'area': 6000,
-        'bedrooms': 3,
-        'bathrooms': 2,
-        'stories': 2,
-        'mainroad': 1, # 'yes'
-        'guestroom': 0, # 'no'
-        'basement': 1, # 'yes'
-        'hotwaterheating': 0, # 'no'
-        'airconditioning': 1, # 'yes'
-        'parking': 2,
-        'prefarea': 1, # 'yes'
-        'furnishingstatus': 2 # 'furnished'
-    }
-    predicted_price = predict_new_house(new_house_features, feature_names, scaler_X, scaler_y, w_adap)
-    print(f"Predicted Price (Adaptive LASSO): ${predicted_price:,.2f}")
+    predict_choice = input("Would you like to predict the price of a custom house? (y/n): ")
+    if predict_choice.strip().lower() == 'y':
+        new_house_features = {}
+        print("\nPlease enter the following feature values (press Enter to use default values):")
+        print("Note: For yes/no, enter 1 for yes, 0 for no. For furnishing, enter 2 for furnished, 1 for semi, 0 for unfurnished.")
+        
+        default_features = {
+            'area': 6000, 'bedrooms': 3, 'bathrooms': 2, 'stories': 2,
+            'mainroad': 1, 'guestroom': 0, 'basement': 1, 'hotwaterheating': 0,
+            'airconditioning': 1, 'parking': 2, 'prefarea': 1, 'furnishingstatus': 2
+        }
+        
+        for feature in feature_names:
+            val = input(f"{feature} [default: {default_features.get(feature, 0)}]: ")
+            if val.strip() == '':
+                new_house_features[feature] = default_features.get(feature, 0)
+            else:
+                try:
+                    new_house_features[feature] = float(val)
+                except ValueError:
+                    print(f"Invalid input, defaulting to {default_features.get(feature, 0)}.")
+                    new_house_features[feature] = default_features.get(feature, 0)
+                    
+        predicted_price = predict_new_house(new_house_features, feature_names, scaler_X, scaler_y, w_adap)
+        print(f"\nPredicted Price (Adaptive LASSO): ${predicted_price:,.2f}")
+    else:
+        print("Skipping custom house prediction.")
 
     print("\nPipeline completed successfully! Visualizations saved.")
 
@@ -75,7 +86,9 @@ def predict_new_house(features_dict, feature_names, scaler_X, scaler_y, weights)
     feature_values = [features_dict.get(col, 0) for col in feature_names]
     
     # Scale features
-    features_scaled = scaler_X.transform([feature_values])
+    # Passing a DataFrame explicitly prevents the missing valid feature names warning from StandardScaler
+    features_df = pd.DataFrame([feature_values], columns=feature_names)
+    features_scaled = scaler_X.transform(features_df)
     
     # Predict (results in scaled price)
     price_scaled = features_scaled @ weights
