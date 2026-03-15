@@ -39,8 +39,51 @@ def main():
     mses = [mse_ridge, mse_lasso, mse_adap]
     sparsities = [sparsity_ridge, sparsity_lasso, sparsity_adap]
     
-    create_visualizations(D, feature_names, w_ridge, w_lasso, w_adap, sparsities, mses, w_hist)
+    # 6. Prediction for a New House
+    # Example: A house with the following features (matches D=12 columns in dataset)
+    # ['area', 'bedrooms', 'bathrooms', 'stories', 'mainroad', 'guestroom', 
+    #  'basement', 'hotwaterheating', 'airconditioning', 'parking', 'prefarea', 'furnishingstatus']
+    print("\n--- 4. Predicting a New Custom House ---")
+    new_house_features = {
+        'area': 6000,
+        'bedrooms': 3,
+        'bathrooms': 2,
+        'stories': 2,
+        'mainroad': 1, # 'yes'
+        'guestroom': 0, # 'no'
+        'basement': 1, # 'yes'
+        'hotwaterheating': 0, # 'no'
+        'airconditioning': 1, # 'yes'
+        'parking': 2,
+        'prefarea': 1, # 'yes'
+        'furnishingstatus': 2 # 'furnished'
+    }
+    predicted_price = predict_new_house(new_house_features, feature_names, scaler_X, scaler_y, w_adap)
+    print(f"Predicted Price (Adaptive LASSO): ${predicted_price:,.2f}")
+
     print("\nPipeline completed successfully! Visualizations saved.")
+
+def predict_new_house(features_dict, feature_names, scaler_X, scaler_y, weights):
+    """
+    Predicts the exact price of a single new house given its raw features.
+    Handles scaling explicitly using the training data scalers.
+    """
+    import numpy as np
+    import pandas as pd
+    
+    # Ensure correct order of features
+    feature_values = [features_dict.get(col, 0) for col in feature_names]
+    
+    # Scale features
+    features_scaled = scaler_X.transform([feature_values])
+    
+    # Predict (results in scaled price)
+    price_scaled = features_scaled @ weights
+    
+    # Inverse scale to get raw dollar value
+    price_original = scaler_y.inverse_transform(price_scaled.reshape(1, -1))[0][0]
+    
+    return price_original
 
 if __name__ == '__main__':
     main()
